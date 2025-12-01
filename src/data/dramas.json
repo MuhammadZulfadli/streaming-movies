@@ -1,0 +1,76 @@
+[
+  {
+    "id": 1,
+    "title": "Destiny's Promise",
+    "poster": "https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&q=80&w=600",
+    "banner": "https://images.unsplash.com/photo-1511875762315-c773eb98eec9?auto=format&fit=crop&q=80&w=1200",
+    "genre": ["Romance", "Drama"],
+    "rating": 4.8,
+    "year": 2024,
+    "totalDuration": "1h 30m",
+    "description": "A heartwarming tale of two strangers whose paths cross in the most unexpected way, leading to a journey of love and self-discovery.",
+    "episodes": [
+      { "id": 101, "title": "Episode 1: The Meeting", "duration": "12:00", "videoUrl": "https://www.w3schools.com/html/mov_bbb.mp4" },
+      { "id": 102, "title": "Episode 2: Sparks Fly", "duration": "15:30", "videoUrl": "https://www.w3schools.com/html/mov_bbb.mp4" },
+      { "id": 103, "title": "Episode 3: The Conflict", "duration": "14:00", "videoUrl": "https://www.w3schools.com/html/mov_bbb.mp4" }
+    ]
+  },
+  {
+    "id": 2,
+    "title": "Silent Echoes",
+    "poster": "https://images.unsplash.com/photo-1626814026160-2237a95fc5a0?auto=format&fit=crop&q=80&w=600",
+    "banner": "https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80&w=1200",
+    "genre": ["Thriller", "Mystery"],
+    "rating": 4.5,
+    "year": 2023,
+    "totalDuration": "2h 10m",
+    "description": "In a quiet town, secrets are buried deep. When a new detective arrives, the silent echoes of the past begin to scream.",
+    "episodes": [
+      { "id": 201, "title": "Episode 1: Arrival", "duration": "18:00", "videoUrl": "https://www.w3schools.com/html/mov_bbb.mp4" },
+      { "id": 202, "title": "Episode 2: The Clue", "duration": "20:00", "videoUrl": "https://www.w3schools.com/html/mov_bbb.mp4" }
+    ]
+  },
+  {
+    "id": 3,
+    "title": "Urban Legends",
+    "poster": "https://images.unsplash.com/photo-1595769816263-9b910be24d5f?auto=format&fit=crop&q=80&w=600",
+    "banner": "https://images.unsplash.com/photo-1517604931442-710e8e929340?auto=format&fit=crop&q=80&w=1200",
+    "genre": ["Horror", "Supernatural"],
+    "rating": 4.2,
+    "year": 2024,
+    "totalDuration": "1h 45m",
+    "description": "Every city has its stories. But some stories are more than just myths. They are warnings.",
+    "episodes": [
+      { "id": 301, "title": "Episode 1: The Alley", "duration": "10:00", "videoUrl": "https://www.w3schools.com/html/mov_bbb.mp4" },
+      { "id": 302, "title": "Episode 2: Midnight", "duration": "12:00", "videoUrl": "https://www.w3schools.com/html/mov_bbb.mp4" }
+    ]
+  },
+  {
+    "id": 4,
+    "title": "Love in Paris",
+    "poster": "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&q=80&w=600",
+    "banner": "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&q=80&w=1200",
+    "genre": ["Romance", "Comedy"],
+    "rating": 4.9,
+    "year": 2022,
+    "totalDuration": "1h 20m",
+    "description": "A fashion designer finds inspiration and love in the city of lights.",
+    "episodes": [
+      { "id": 401, "title": "Episode 1: Bonjour", "duration": "15:00", "videoUrl": "https://www.w3schools.com/html/mov_bbb.mp4" }
+    ]
+  },
+  {
+    "id": 5,
+    "title": "The Last Samurai",
+    "poster": "https://images.unsplash.com/photo-1514539079130-25950c84af65?auto=format&fit=crop&q=80&w=600",
+    "banner": "https://images.unsplash.com/photo-1514539079130-25950c84af65?auto=format&fit=crop&q=80&w=1200",
+    "genre": ["Action", "History"],
+    "rating": 4.7,
+    "year": 2023,
+    "totalDuration": "2h 00m",
+    "description": "Honor is everything. A warrior fights for his legacy in a changing world.",
+    "episodes": [
+      { "id": 501, "title": "Episode 1: The Sword", "duration": "22:00", "videoUrl": "https://www.w3schools.com/html/mov_bbb.mp4" }
+    ]
+  }
+]
