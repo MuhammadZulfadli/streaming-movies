@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import HeroBanner from '../components/HeroBanner.vue'
 import DramaCard from '../components/DramaCard.vue'
 import dramasData from '../data/dramas.json'
@@ -71,29 +71,48 @@ onMounted(() => {
   fetchLatestDramas()
 })
 
-// Search Logic
-const searchResults = computed(() => {
-  if (!store.searchQuery && !store.selectedGenre && !store.selectedDuration) return []
+// Search Logic — API-based
+const searchResults = ref([])
+const isSearchLoading = ref(false)
+let searchDebounceTimer = null
 
-  return dramas.value.filter(drama => {
-    const matchesQuery = drama.title.toLowerCase().includes(store.searchQuery.toLowerCase()) ||
-                         drama.genre.some(g => g.toLowerCase().includes(store.searchQuery.toLowerCase()))
-    
-    const matchesGenre = !store.selectedGenre || drama.genre.includes(store.selectedGenre)
-    
-    // Mock duration logic
-    // 'short' < 1h 30m, 'medium' < 2h, 'long' >= 2h
-    // drama.totalDuration is string like "1h 30m"
-    // For simplicity, let's just check if string contains "1h" or "2h"
-    let matchesDuration = true
-    if (store.selectedDuration) {
-      if (store.selectedDuration === 'short') matchesDuration = drama.totalDuration.includes('1h') && !drama.totalDuration.includes('2h')
-      if (store.selectedDuration === 'medium') matchesDuration = drama.totalDuration.includes('1h 4') || drama.totalDuration.includes('1h 5')
-      if (store.selectedDuration === 'long') matchesDuration = drama.totalDuration.includes('2h')
-    }
+const fetchSearchResults = async (query) => {
+  if (!query || query.trim() === '') {
+    searchResults.value = []
+    return
+  }
 
-    return matchesQuery && matchesGenre && matchesDuration
-  })
+  isSearchLoading.value = true
+  try {
+    const encodedQuery = encodeURIComponent(query.trim())
+    const response = await fetch(`${import.meta.env.VITE_API_SEARCH_URL}?query=${encodedQuery}`)
+    if (!response.ok) throw new Error('Gagal mengambil hasil pencarian')
+
+    const data = await response.json()
+    searchResults.value = data.map(item => ({
+      id: item.bookId,
+      title: item.bookName,
+      poster: item.cover,
+      genre: item.tags || [],
+      rating: 4.8,
+      year: item.shelfTime ? new Date(item.shelfTime).getFullYear() : 2024,
+      description: item.introduction,
+      episodes: []
+    }))
+  } catch (error) {
+    console.error('Error fetching search results:', error)
+    searchResults.value = []
+  } finally {
+    isSearchLoading.value = false
+  }
+}
+
+// Watch perubahan searchQuery dengan debounce 500ms
+watch(() => store.searchQuery, (newQuery) => {
+  clearTimeout(searchDebounceTimer)
+  searchDebounceTimer = setTimeout(() => {
+    fetchSearchResults(newQuery)
+  }, 500)
 })
 
 const allGenres = computed(() => {
@@ -111,7 +130,7 @@ const isSearching = computed(() => !!store.searchQuery || !!store.selectedGenre 
     <HeroBanner v-if="featuredDrama && !isSearching" :drama="featuredDrama" />
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12" :class="{ 'pt-8': isSearching }">
-      
+
       <!-- Search Filters -->
       <div v-if="isSearching" class="bg-gray-800 p-4 rounded-xl border border-gray-700">
         <div class="flex flex-wrap items-center gap-4">
@@ -119,7 +138,7 @@ const isSearching = computed(() => !!store.searchQuery || !!store.selectedGenre 
             <Filter class="w-5 h-5" />
             <span>Filters:</span>
           </div>
-          
+
           <select v-model="store.selectedGenre" class="bg-gray-900 text-white border border-gray-700 rounded-md px-3 py-1.5 text-sm focus:ring-rose-500 focus:border-rose-500">
             <option value="">All Genres</option>
             <option v-for="genre in allGenres" :key="genre" :value="genre">{{ genre }}</option>
@@ -132,7 +151,7 @@ const isSearching = computed(() => !!store.searchQuery || !!store.selectedGenre 
             <option value="long">Long (> 2h)</option>
           </select>
 
-          <button 
+          <button
             @click="store.searchQuery = ''; store.selectedGenre = ''; store.selectedDuration = ''"
             class="text-gray-400 hover:text-white text-sm underline ml-auto"
           >
@@ -144,19 +163,28 @@ const isSearching = computed(() => !!store.searchQuery || !!store.selectedGenre 
       <!-- Search Results -->
       <section v-if="isSearching">
         <h2 class="text-2xl font-bold text-white mb-6">
-          Search Results 
+          Search Results
           <span class="text-gray-400 text-lg font-normal">({{ searchResults.length }} found)</span>
         </h2>
-        <div v-if="searchResults.length > 0" class="grid grid-cols-2 md:grid-cols-4 gap-6">
-          <DramaCard 
-            v-for="drama in searchResults" 
-            :key="drama.id" 
-            :drama="drama" 
-          />
+
+        <!-- Loading State saat API sedang dipanggil -->
+        <div v-if="isSearchLoading" class="text-center py-12 text-gray-400">
+          Mencari drama...
         </div>
-        <div v-else class="text-center py-12 text-gray-400">
-          No dramas found matching your criteria.
-        </div>
+
+        <!-- Tampilkan hasil setelah loading selesai -->
+        <template v-else>
+          <div v-if="searchResults.length > 0" class="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <DramaCard
+              v-for="drama in searchResults"
+              :key="drama.id"
+              :drama="drama"
+            />
+          </div>
+          <div v-else-if="store.searchQuery" class="text-center py-12 text-gray-400">
+            Tidak ada drama yang ditemukan untuk "<strong class="text-white">{{ store.searchQuery }}</strong>".
+          </div>
+        </template>
       </section>
 
       <!-- Default Sections (Hidden when searching) -->
@@ -167,15 +195,15 @@ const isSearching = computed(() => !!store.searchQuery || !!store.selectedGenre 
             <h2 class="text-2xl font-bold text-white">Trending Now</h2>
             <a href="#" class="text-rose-500 hover:text-rose-400 text-sm font-medium">View All</a>
           </div>
-          
+
           <div v-if="isLoading" class="text-center py-8 text-gray-400">
             Loading trending content...
           </div>
           <div v-else class="grid grid-cols-2 md:grid-cols-4 gap-6">
-            <DramaCard 
-              v-for="drama in apiTrendingDramas" 
-              :key="drama.id" 
-              :drama="drama" 
+            <DramaCard
+              v-for="drama in apiTrendingDramas"
+              :key="drama.id"
+              :drama="drama"
             />
           </div>
         </section>
@@ -190,10 +218,10 @@ const isSearching = computed(() => !!store.searchQuery || !!store.selectedGenre 
             Loading new releases...
           </div>
           <div v-else class="grid grid-cols-2 md:grid-cols-4 gap-6">
-            <DramaCard 
-              v-for="drama in apiLatestDramas" 
-              :key="drama.id" 
-              :drama="drama" 
+            <DramaCard
+              v-for="drama in apiLatestDramas"
+              :key="drama.id"
+              :drama="drama"
             />
           </div>
         </section>
