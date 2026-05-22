@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import HeroBanner from '../components/HeroBanner.vue'
 import DramaCard from '../components/DramaCard.vue'
 import dramasData from '../data/dramas.json'
@@ -11,14 +11,64 @@ const dramas = ref(dramasData)
 // Featured drama (first one for now)
 const featuredDrama = computed(() => dramas.value[0])
 
-// Trending dramas (mock logic: top rated)
+// Trending dramas (mock logic: top rated) - fallback if needed, but not used in UI now
 const trendingDramas = computed(() => {
   return [...dramas.value].sort((a, b) => b.rating - a.rating).slice(0, 4)
 })
 
-// Latest releases (mock logic: all for now, or reversed)
-const latestDramas = computed(() => {
-  return [...dramas.value].reverse()
+const apiTrendingDramas = ref([])
+const isLoading = ref(false)
+
+const fetchTrendingDramas = async () => {
+  isLoading.value = true
+  try {
+    const response = await fetch(import.meta.env.VITE_SANSEKAI_API_URL)
+    const data = await response.json()
+    apiTrendingDramas.value = data.slice(0, 4).map(item => ({
+      id: item.bookId,
+      title: item.bookName,
+      poster: item.coverWap,
+      genre: item.tags,
+      rating: 4.8, // Default rating
+      year: 2024,
+      description: item.introduction,
+      episodes: []
+    }))
+  } catch (error) {
+    console.error('Error fetching trending dramas:', error)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const apiLatestDramas = ref([])
+const isLatestLoading = ref(false)
+
+const fetchLatestDramas = async () => {
+  isLatestLoading.value = true
+  try {
+    const response = await fetch(import.meta.env.VITE_API_LATEST_URL)
+    const data = await response.json()
+    apiLatestDramas.value = data.slice(0, 8).map(item => ({
+      id: item.bookId,
+      title: item.bookName,
+      poster: item.coverWap,
+      genre: item.tags || [],
+      rating: 4.7, // Default rating
+      year: item.shelfTime ? new Date(item.shelfTime).getFullYear() : 2024,
+      description: item.introduction,
+      episodes: []
+    }))
+  } catch (error) {
+    console.error('Error fetching latest dramas:', error)
+  } finally {
+    isLatestLoading.value = false
+  }
+}
+
+onMounted(() => {
+  fetchTrendingDramas()
+  fetchLatestDramas()
 })
 
 // Search Logic
@@ -117,9 +167,13 @@ const isSearching = computed(() => !!store.searchQuery || !!store.selectedGenre 
             <h2 class="text-2xl font-bold text-white">Trending Now</h2>
             <a href="#" class="text-rose-500 hover:text-rose-400 text-sm font-medium">View All</a>
           </div>
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+          
+          <div v-if="isLoading" class="text-center py-8 text-gray-400">
+            Loading trending content...
+          </div>
+          <div v-else class="grid grid-cols-2 md:grid-cols-4 gap-6">
             <DramaCard 
-              v-for="drama in trendingDramas" 
+              v-for="drama in apiTrendingDramas" 
               :key="drama.id" 
               :drama="drama" 
             />
@@ -132,9 +186,12 @@ const isSearching = computed(() => !!store.searchQuery || !!store.selectedGenre 
             <h2 class="text-2xl font-bold text-white">New Releases</h2>
             <a href="#" class="text-rose-500 hover:text-rose-400 text-sm font-medium">View All</a>
           </div>
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div v-if="isLatestLoading" class="text-center py-8 text-gray-400">
+            Loading new releases...
+          </div>
+          <div v-else class="grid grid-cols-2 md:grid-cols-4 gap-6">
             <DramaCard 
-              v-for="drama in latestDramas" 
+              v-for="drama in apiLatestDramas" 
               :key="drama.id" 
               :drama="drama" 
             />

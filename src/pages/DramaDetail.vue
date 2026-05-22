@@ -3,15 +3,55 @@ import { ref, computed, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { Play, Clock, Star, Calendar } from "lucide-vue-next";
 import EpisodeItem from "../components/EpisodeItem.vue";
-import dramasData from "../data/dramas.json";
 
 const route = useRoute();
 const router = useRouter();
 const drama = ref(null);
+const isLoading = ref(true);
+const error = ref(null);
 
-onMounted(() => {
-  const id = parseInt(route.params.id);
-  drama.value = dramasData.find((d) => d.id === id);
+onMounted(async () => {
+  const bookId = route.params.id; // Keep as string for API
+  isLoading.value = true;
+  error.value = null;
+
+  try {
+    const [detailRes, chaptersRes] = await Promise.all([
+      fetch(`${import.meta.env.VITE_API_DETAIL_URL}?bookId=${bookId}`),
+      fetch(`${import.meta.env.VITE_API_ALLEPISODE_URL}?bookId=${bookId}`)
+    ]);
+
+    if (!detailRes.ok) throw new Error("Failed to fetch detail");
+
+    const detailData = await detailRes.json();
+    const chaptersData = await chaptersRes.json();
+    
+    // Safety check if chaptersData is an array or nested
+    const episodesList = Array.isArray(chaptersData) ? chaptersData : chaptersData?.data || [];
+
+    drama.value = {
+      id: detailData.bookId || bookId,
+      title: detailData.bookName || "Unknown Title",
+      poster: detailData.coverWap,
+      banner: detailData.coverWap,
+      description: detailData.introduction || "No description available",
+      genre: detailData.tags || [],
+      rating: 4.8, // Fallback
+      year: new Date().getFullYear(),
+      totalDuration: `${episodesList.length} Eps`,
+      episodes: episodesList.map((ep, index) => ({
+        id: ep.chapterId || Math.random(),
+        title: ep.chapterName || `Episode ${index + 1}`,
+        duration: "", // Optional fallback
+        videoUrl: ep.video || ep.videoUrl || ""
+      }))
+    };
+  } catch (err) {
+    console.error("Error fetching drama:", err);
+    error.value = "Failed to load drama details.";
+  } finally {
+    isLoading.value = false;
+  }
 });
 
 const playEpisode = (episode) => {
@@ -118,7 +158,9 @@ const playFirstEpisode = () => {
       </div>
     </div>
   </div>
-  <div v-else class="min-h-screen flex items-center justify-center text-white">
-    Loading...
+  <div v-else class="min-h-screen flex flex-col items-center justify-center text-white">
+    <div v-if="isLoading" class="text-xl animate-pulse">Loading drama details...</div>
+    <div v-else-if="error" class="text-xl text-rose-500">{{ error }}</div>
+    <div v-else class="text-xl text-gray-400">Drama not found.</div>
   </div>
 </template>
