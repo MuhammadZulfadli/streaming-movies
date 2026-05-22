@@ -1,22 +1,18 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
-import HeroBanner from '../components/HeroBanner.vue'
 import DramaCard from '../components/DramaCard.vue'
-import dramasData from '../data/dramas.json'
+import HeroBanner from '../components/HeroBanner.vue'
 import { store } from '../store'
-import { Filter } from 'lucide-vue-next'
 
-const dramas = ref(dramasData)
-
-// Featured drama (first one for now)
-const featuredDrama = computed(() => dramas.value[0])
-
-// Trending dramas (mock logic: top rated) - fallback if needed, but not used in UI now
-const trendingDramas = computed(() => {
-  return [...dramas.value].sort((a, b) => b.rating - a.rating).slice(0, 4)
-})
-
+// State trending data
 const apiTrendingDramas = ref([])
+
+// State untuk hero banner
+const dramas = ref(apiTrendingDramas)
+
+// computed untuk mendapatkan data random dari trending data
+const featuredDrama = computed(() => dramas.value[Math.floor(Math.random() * dramas.value.length)])
+
 const isLoading = ref(false)
 
 const fetchTrendingDramas = async () => {
@@ -66,9 +62,11 @@ const fetchLatestDramas = async () => {
   }
 }
 
-onMounted(() => {
-  fetchTrendingDramas()
-  fetchLatestDramas()
+onMounted(async () => {
+  await Promise.all(
+    fetchTrendingDramas(),
+    fetchLatestDramas()
+  )
 })
 
 // Search Logic — API-based
@@ -115,50 +113,15 @@ watch(() => store.searchQuery, (newQuery) => {
   }, 500)
 })
 
-const allGenres = computed(() => {
-  const genres = new Set()
-  dramas.value.forEach(d => d.genre.forEach(g => genres.add(g)))
-  return Array.from(genres)
-})
-
-const isSearching = computed(() => !!store.searchQuery || !!store.selectedGenre || !!store.selectedDuration)
+const isSearching = computed(() => !!store.searchQuery)
 </script>
 
 <template>
   <div class="space-y-12 pb-12">
-    <!-- Hero Section (Hidden when searching) -->
-    <HeroBanner v-if="featuredDrama && !isSearching" :drama="featuredDrama" />
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 pt-8">
 
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12" :class="{ 'pt-8': isSearching }">
-
-      <!-- Search Filters -->
-      <div v-if="isSearching" class="bg-gray-800 p-4 rounded-xl border border-gray-700">
-        <div class="flex flex-wrap items-center gap-4">
-          <div class="flex items-center gap-2 text-rose-500 font-medium">
-            <Filter class="w-5 h-5" />
-            <span>Filters:</span>
-          </div>
-
-          <select v-model="store.selectedGenre" class="bg-gray-900 text-white border border-gray-700 rounded-md px-3 py-1.5 text-sm focus:ring-rose-500 focus:border-rose-500">
-            <option value="">All Genres</option>
-            <option v-for="genre in allGenres" :key="genre" :value="genre">{{ genre }}</option>
-          </select>
-
-          <select v-model="store.selectedDuration" class="bg-gray-900 text-white border border-gray-700 rounded-md px-3 py-1.5 text-sm focus:ring-rose-500 focus:border-rose-500">
-            <option value="">Any Duration</option>
-            <option value="short">Short (< 1.5h)</option>
-            <option value="medium">Medium (1.5h - 2h)</option>
-            <option value="long">Long (> 2h)</option>
-          </select>
-
-          <button
-            @click="store.searchQuery = ''; store.selectedGenre = ''; store.selectedDuration = ''"
-            class="text-gray-400 hover:text-white text-sm underline ml-auto"
-          >
-            Clear All
-          </button>
-        </div>
-      </div>
+      <!-- Hero Section (Hidden when searching) -->
+      <HeroBanner v-if="featuredDrama && !isSearching" :drama="featuredDrama" />
 
       <!-- Search Results -->
       <section v-if="isSearching">
@@ -175,11 +138,7 @@ const isSearching = computed(() => !!store.searchQuery || !!store.selectedGenre 
         <!-- Tampilkan hasil setelah loading selesai -->
         <template v-else>
           <div v-if="searchResults.length > 0" class="grid grid-cols-2 md:grid-cols-4 gap-6">
-            <DramaCard
-              v-for="drama in searchResults"
-              :key="drama.id"
-              :drama="drama"
-            />
+            <DramaCard v-for="drama in searchResults" :key="drama.id" :drama="drama" />
           </div>
           <div v-else-if="store.searchQuery" class="text-center py-12 text-gray-400">
             Tidak ada drama yang ditemukan untuk "<strong class="text-white">{{ store.searchQuery }}</strong>".
@@ -190,21 +149,16 @@ const isSearching = computed(() => !!store.searchQuery || !!store.selectedGenre 
       <!-- Default Sections (Hidden when searching) -->
       <template v-else>
         <!-- Trending Section -->
-        <section>
+        <section id="trending">
           <div class="flex items-center justify-between mb-6">
             <h2 class="text-2xl font-bold text-white">Trending Now</h2>
-            <a href="#" class="text-rose-500 hover:text-rose-400 text-sm font-medium">View All</a>
           </div>
 
           <div v-if="isLoading" class="text-center py-8 text-gray-400">
             Loading trending content...
           </div>
           <div v-else class="grid grid-cols-2 md:grid-cols-4 gap-6">
-            <DramaCard
-              v-for="drama in apiTrendingDramas"
-              :key="drama.id"
-              :drama="drama"
-            />
+            <DramaCard v-for="drama in apiTrendingDramas" :key="drama.id" :drama="drama" />
           </div>
         </section>
 
@@ -212,17 +166,12 @@ const isSearching = computed(() => !!store.searchQuery || !!store.selectedGenre 
         <section>
           <div class="flex items-center justify-between mb-6">
             <h2 class="text-2xl font-bold text-white">New Releases</h2>
-            <a href="#" class="text-rose-500 hover:text-rose-400 text-sm font-medium">View All</a>
           </div>
           <div v-if="isLatestLoading" class="text-center py-8 text-gray-400">
             Loading new releases...
           </div>
           <div v-else class="grid grid-cols-2 md:grid-cols-4 gap-6">
-            <DramaCard
-              v-for="drama in apiLatestDramas"
-              :key="drama.id"
-              :drama="drama"
-            />
+            <DramaCard v-for="drama in apiLatestDramas" :key="drama.id" :drama="drama" />
           </div>
         </section>
       </template>
